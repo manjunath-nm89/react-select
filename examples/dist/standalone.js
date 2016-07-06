@@ -338,7 +338,6 @@ var Select = _react2['default'].createClass({
 
 	propTypes: {
 		addLabelText: _react2['default'].PropTypes.string, // placeholder displayed when you want to add a label on a multi-value input
-		autosize: _react2['default'].PropTypes.bool, // whether to enable autosizing or not
 		allowCreate: _react2['default'].PropTypes.bool, // whether to allow creation of new entries
 		autoBlur: _react2['default'].PropTypes.bool,
 		autofocus: _react2['default'].PropTypes.bool, // autofocus the component on mount
@@ -356,7 +355,6 @@ var Select = _react2['default'].createClass({
 		ignoreCase: _react2['default'].PropTypes.bool, // whether to perform case-insensitive filtering
 		inputProps: _react2['default'].PropTypes.object, // custom attributes for the Input
 		isLoading: _react2['default'].PropTypes.bool, // whether the Select is loading externally or not (such as options being loaded)
-		joinValues: _react2['default'].PropTypes.bool, // joins multiple values into a single form field with the delimiter (legacy mode)
 		labelKey: _react2['default'].PropTypes.string, // path of the label value in option objects
 		matchPos: _react2['default'].PropTypes.string, // (any|start) match the start or entire string when filtering
 		matchProp: _react2['default'].PropTypes.string, // (any|label|value) which option property to filter on
@@ -390,17 +388,14 @@ var Select = _react2['default'].createClass({
 		valueComponent: _react2['default'].PropTypes.func, // value component to render
 		valueKey: _react2['default'].PropTypes.string, // path of the label value in option objects
 		valueRenderer: _react2['default'].PropTypes.func, // valueRenderer: function (option) {}
-		wrapperStyle: _react2['default'].PropTypes.object, // optional style to apply to the component wrapper
-		displayAll: _react2['default'].PropTypes.bool, // Display all the contents in the dropdown, even after selecting few of the entries from it, this is applicable only when multi is true
-		singleValue: _react2['default'].PropTypes.bool },
+		wrapperStyle: _react2['default'].PropTypes.object },
 
-	// Send only a single value to the Custom Value Component
+	// optional style to apply to the component wrapper
 	statics: { Async: _Async2['default'] },
 
 	getDefaultProps: function getDefaultProps() {
 		return {
 			addLabelText: 'Add "{label}"?',
-			autosize: true,
 			allowCreate: false,
 			backspaceRemoves: true,
 			clearable: true,
@@ -414,7 +409,6 @@ var Select = _react2['default'].createClass({
 			ignoreCase: true,
 			inputProps: {},
 			isLoading: false,
-			joinValues: false,
 			labelKey: 'label',
 			matchPos: 'any',
 			matchProp: 'any',
@@ -429,8 +423,7 @@ var Select = _react2['default'].createClass({
 			searchable: true,
 			simpleValue: false,
 			valueComponent: _Value2['default'],
-			valueKey: 'value',
-			displayAll: false
+			valueKey: 'value'
 		};
 	},
 
@@ -448,14 +441,6 @@ var Select = _react2['default'].createClass({
 	componentDidMount: function componentDidMount() {
 		if (this.props.autofocus) {
 			this.focus();
-		}
-	},
-
-	componentWillReceiveProps: function componentWillReceiveProps(nextProps) {
-		if (this.props.value !== nextProps.value && nextProps.required) {
-			this.setState({
-				required: this.handleRequired(nextProps.value, nextProps.multi)
-			});
 		}
 	},
 
@@ -907,32 +892,19 @@ var Select = _react2['default'].createClass({
 		}
 		var onClick = this.props.onValueClick ? this.handleValueClick : null;
 		if (this.props.multi) {
-			if (this.props.singleValue) {
+			return valueArray.map(function (value, i) {
 				return _react2['default'].createElement(
 					ValueComponent,
 					{
-						disabled: this.props.disabled,
+						disabled: _this2.props.disabled || value.clearableValue === false,
+						key: 'value-' + i + '-' + value[_this2.props.valueKey],
 						onClick: onClick,
-						onRemove: this.removeValue,
-						values: valueArray
+						onRemove: _this2.removeValue,
+						value: value
 					},
-					valueArray.length
+					renderLabel(value)
 				);
-			} else {
-				return valueArray.map(function (value, i) {
-					return _react2['default'].createElement(
-						ValueComponent,
-						{
-							disabled: _this2.props.disabled || value.clearableValue === false,
-							key: 'value-' + i + '-' + value[_this2.props.valueKey],
-							onClick: onClick,
-							onRemove: _this2.removeValue,
-							value: value
-						},
-						renderLabel(value)
-					);
-				});
-			}
+			});
 		} else if (!this.state.inputValue) {
 			if (isOpen) onClick = null;
 			return _react2['default'].createElement(
@@ -958,32 +930,17 @@ var Select = _react2['default'].createClass({
 				ref: 'input',
 				style: { border: 0, width: 1, display: 'inline-block' } }));
 		}
-		if (this.props.autosize) {
-			return _react2['default'].createElement(_reactInputAutosize2['default'], _extends({}, this.props.inputProps, {
-				className: className,
-				tabIndex: this.props.tabIndex,
-				onBlur: this.handleInputBlur,
-				onChange: this.handleInputChange,
-				onFocus: this.handleInputFocus,
-				minWidth: '5',
-				ref: 'input',
-				required: this.state.required,
-				value: this.state.inputValue
-			}));
-		}
-		return _react2['default'].createElement(
-			'div',
-			{ className: className },
-			_react2['default'].createElement('input', _extends({}, this.props.inputProps, {
-				tabIndex: this.props.tabIndex,
-				onBlur: this.handleInputBlur,
-				onChange: this.handleInputChange,
-				onFocus: this.handleInputFocus,
-				ref: 'input',
-				required: this.state.required,
-				value: this.state.inputValue
-			}))
-		);
+		return _react2['default'].createElement(_reactInputAutosize2['default'], _extends({}, this.props.inputProps, {
+			className: className,
+			tabIndex: this.props.tabIndex,
+			onBlur: this.handleInputBlur,
+			onChange: this.handleInputChange,
+			onFocus: this.handleInputFocus,
+			minWidth: '5',
+			ref: 'input',
+			required: this.state.required,
+			value: this.state.inputValue
+		}));
 	},
 
 	renderClear: function renderClear() {
@@ -1101,17 +1058,6 @@ var Select = _react2['default'].createClass({
 		var _this5 = this;
 
 		if (!this.props.name) return;
-		if (this.props.joinValues) {
-			var value = valueArray.map(function (i) {
-				return stringifyValue(i[_this5.props.valueKey]);
-			}).join(this.props.delimiter);
-			return _react2['default'].createElement('input', {
-				type: 'hidden',
-				ref: 'value',
-				name: this.props.name,
-				value: value,
-				disabled: this.props.disabled });
-		}
 		return valueArray.map(function (item, index) {
 			return _react2['default'].createElement('input', { key: 'hidden.' + index,
 				type: 'hidden',
@@ -1134,9 +1080,9 @@ var Select = _react2['default'].createClass({
 
 	render: function render() {
 		var valueArray = this.getValueArray();
-		var options = this._visibleOptions = this.filterOptions(this.props.multi && !this.props.displayAll ? valueArray : null);
+		var options = this._visibleOptions = this.filterOptions(this.props.multi ? valueArray : null);
 		var isOpen = this.state.isOpen;
-		if (this.props.multi && !this.props.displayAll && !options.length && valueArray.length && !this.state.inputValue) isOpen = false;
+		if (this.props.multi && !options.length && valueArray.length && !this.state.inputValue) isOpen = false;
 		var focusedOption = this._focusedOption = this.getFocusableOption(valueArray[0]);
 		var className = (0, _classnames2['default'])('Select', this.props.className, {
 			'Select--multi': this.props.multi,
