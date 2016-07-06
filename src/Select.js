@@ -81,6 +81,8 @@ const Select = React.createClass({
 		valueKey: React.PropTypes.string,           // path of the label value in option objects
 		valueRenderer: React.PropTypes.func,        // valueRenderer: function (option) {}
 		wrapperStyle: React.PropTypes.object,       // optional style to apply to the component wrapper
+		displayAll: React.PropTypes.bool,           // Display all the contents in the dropdown, even after selecting few of the entries from it, this is applicable only when multi is true
+    singleValue: React.PropTypes.bool,          // Send only a single value to the Custom Value Component
 	},
 
 	statics: { Async },
@@ -118,6 +120,7 @@ const Select = React.createClass({
 			simpleValue: false,
 			valueComponent: Value,
 			valueKey: 'value',
+			displayAll: false,
 		};
 	},
 
@@ -567,19 +570,33 @@ const Select = React.createClass({
 		}
 		let onClick = this.props.onValueClick ? this.handleValueClick : null;
 		if (this.props.multi) {
-			return valueArray.map((value, i) => {
-				return (
-					<ValueComponent
-						disabled={this.props.disabled || value.clearableValue === false}
-						key={`value-${i}-${value[this.props.valueKey]}`}
-						onClick={onClick}
-						onRemove={this.removeValue}
-						value={value}
-						>
-						{renderLabel(value)}
-					</ValueComponent>
-				);
-			});
+			if(this.props.singleValue) {
+        return (
+          <ValueComponent
+            disabled={this.props.disabled}
+            onClick={onClick}
+            onRemove={this.removeValue}
+            values={valueArray}
+            >
+            {valueArray.length}
+          </ValueComponent>
+        );
+      }
+      else {
+				return valueArray.map((value, i) => {
+					return (
+						<ValueComponent
+							disabled={this.props.disabled || value.clearableValue === false}
+							key={`value-${i}-${value[this.props.valueKey]}`}
+							onClick={onClick}
+							onRemove={this.removeValue}
+							value={value}
+							>
+							{renderLabel(value)}
+						</ValueComponent>
+					);
+				});
+      }
 		} else if (!this.state.inputValue) {
 			if (isOpen) onClick = null;
 			return (
@@ -780,9 +797,9 @@ const Select = React.createClass({
 
 	render () {
 		let valueArray = this.getValueArray();
-		let options = this._visibleOptions = this.filterOptions(this.props.multi ? valueArray : null);
+		let options = this._visibleOptions = this.filterOptions(this.props.multi && !this.props.displayAll ? valueArray : null);
 		let isOpen = this.state.isOpen;
-		if (this.props.multi && !options.length && valueArray.length && !this.state.inputValue) isOpen = false;
+		if (this.props.multi && !this.props.displayAll && !options.length && valueArray.length && !this.state.inputValue) isOpen = false;
 		let focusedOption = this._focusedOption = this.getFocusableOption(valueArray[0]);
 		let className = classNames('Select', this.props.className, {
 			'Select--multi': this.props.multi,
